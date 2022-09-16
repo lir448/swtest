@@ -1,0 +1,36 @@
+---
+- name: app deployment
+  hosts: nodes
+  become: yes
+  tasks:
+    - name: Transfer new app to the server with docker
+      synchronize:
+        src: /home/ubuntu/softwise/new_app/app_v2
+        dest: /home/ubuntu/app
+    - name: Deploy new app
+      community.docker.docker_compose:
+        project_src: /home/ubuntu/app/app_v2
+        files:
+          - docker-compose.yml
+    - name: Check new app status
+      uri:
+        url: http://172.31.3.173:5002
+      register: result
+    - name: Upload new nginx config
+      when: result is succeeded
+      synchronize:
+        src: /home/ubuntu/softwise/new_app/nginx/nginx.conf
+        dest: /home/ubuntu/app/nginx/nginx.conf
+      register: result
+    - name: Switch nginx lb
+      when: result is succeeded
+      community.docker.docker_container:
+        name: app_nginx_1
+        restart: true
+      register: result
+    - name: Remove old app
+      when: result is succeeded
+      community.docker.docker_container:
+        name: app_app_1
+        state: stopped
+...

@@ -1,0 +1,15 @@
+---
+- name: app deployment
+  hosts: nodes
+  become: yes
+  tasks:
+    - name: Transfering files to the server with Docker
+      synchronize:
+        src: /home/ubuntu/softwise/app
+        dest: /home/ubuntu/
+    - name: Deploy with docker-compose
+      community.docker.docker_compose:
+        project_src: /home/ubuntu/app
+        files:
+          - docker-compose.yml
+...
